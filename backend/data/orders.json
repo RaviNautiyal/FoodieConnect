@@ -1,0 +1,19 @@
+[
+  {
+    "items": [
+      { "quantity": 2 },
+      { "quantity": 1 }
+    ],
+    "totalAmount": 28.97,
+    "deliveryAddress": "123 Main St, City",
+    "status": "Pending"
+  },
+  {
+    "items": [
+      { "quantity": 1 }
+    ],
+    "totalAmount": 14.99,
+    "deliveryAddress": "456 Elm St, City",
+    "status": "Pending"
+  }
+]

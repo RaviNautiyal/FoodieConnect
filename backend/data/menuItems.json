@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Pasta Alfredo",
+    "price": 12.99,
+    "description": "Creamy pasta with Parmesan",
+    "image": "https://example.com/pasta.jpg"
+  },
+  {
+    "name": "Margherita Pizza",
+    "price": 15.99,
+    "description": "Classic pizza with tomato and mozzarella",
+    "image": "https://example.com/pizza.jpg"
+  },
+  {
+    "name": "Butter Chicken",
+    "price": 14.99,
+    "description": "Spicy chicken curry",
+    "image": "https://example.com/chicken.jpg"
+  }
+]

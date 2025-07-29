@@ -1,0 +1,4 @@
+[
+  { "name": "Italian Delight", "address": "123 Main St, City", "image": "https://example.com/italian.jpg" },
+  { "name": "Spicy Delight", "address": "456 Elm St, City", "image": "https://example.com/spicy.jpg" }
+]
