@@ -4,27 +4,31 @@ const mongoose = require('mongoose');
 const menuItemSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true,
-    trim: true
+    required: [true, 'Menu item name is required'],
+    trim: true,
+    maxlength: [100, 'Name cannot be more than 100 characters']
   },
   description: {
     type: String,
-    required: true
+    required: [true, 'Description is required'],
+    maxlength: [500, 'Description cannot be more than 500 characters']
   },
   price: {
     type: Number,
-    required: true,
-    min: 0
+    required: [true, 'Price is required'],
+    min: [0, 'Price cannot be negative'],
+    max: [10000, 'Price seems too high']
   },
   category: {
-    type: String,
-    required: true,
-    enum: ['appetizer', 'main-course', 'dessert', 'beverage', 'side-dish', 'salad', 'soup']
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
+    required: [true, 'Category is required']
   },
-  restaurantId: {
+  restaurant: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Restaurant',
-    required: true
+    required: [true, 'Restaurant reference is required'],
+    index: true
   },
   image: {
     type: String,
@@ -32,26 +36,27 @@ const menuItemSchema = new mongoose.Schema({
   },
   isAvailable: {
     type: Boolean,
-    default: true
+    default: true,
+    index: true
   },
-  isVegetarian: {
+  isVeg: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  isPopular: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  isChefSpecial: {
     type: Boolean,
     default: false
   },
-  isVegan: {
-    type: Boolean,
-    default: false
-  },
-  isGlutenFree: {
-    type: Boolean,
-    default: false
-  },
-  allergens: [{
-    type: String,
-    enum: ['peanuts', 'tree-nuts', 'milk', 'eggs', 'soy', 'wheat', 'fish', 'shellfish']
-  }],
   preparationTime: {
-    type: Number, // in minutes
+    type: Number,
+    min: 0,
+    max: 240,
     default: 15
   },
   calories: {

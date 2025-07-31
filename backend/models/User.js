@@ -6,6 +6,23 @@ const userSchema = new mongoose.Schema({
   lastName: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: false }, // Optional for OAuth users
+  role: { type: String, enum: ['customer', 'restaurant', 'admin'], default: 'customer' },
+  // Restaurant-specific fields
+  restaurantName: { type: String },
+  restaurantDescription: { type: String },
+  restaurantAddress: {
+    street: String,
+    city: String,
+    state: String,
+    zipCode: String,
+    coordinates: {
+      latitude: Number,
+      longitude: Number
+    }
+  },
+  restaurantPhone: { type: String },
+  restaurantImage: { type: String },
+  restaurantVerified: { type: Boolean, default: false },
   googleId: { type: String, unique: true, sparse: true },
   facebookId: { type: String, unique: true, sparse: true },
   refreshToken: { type: String },

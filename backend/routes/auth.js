@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
+const { sendEmail } = require('../middleware/email');
 
 // Helper function to generate tokens
 const generateTokens = (userId) => {
@@ -24,7 +25,7 @@ const generateTokens = (userId) => {
 // Register endpoint
 router.post('/register', async (req, res) => {
   try {
-    const { firstName, lastName, email, password } = req.body;
+    const { firstName, lastName, email, password, role, restaurantName, restaurantDescription, restaurantAddress, restaurantPhone } = req.body;
     
     // Validation
     if (!firstName || !lastName || !email || !password) {
@@ -44,23 +45,58 @@ router.post('/register', async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
     
+    // Generate email verification token (optional)
+    const emailVerificationToken = crypto.randomBytes(32).toString('hex');
     // Create user
     const user = new User({
       firstName,
       lastName,
       email,
       password: hashedPassword,
-      isEmailVerified: false // Will be verified via email later
+      role: role || 'customer',
+      isEmailVerified: false,
+      emailVerificationToken,
+      // Restaurant fields
+      restaurantName: role === 'restaurant' ? restaurantName : undefined,
+      restaurantDescription: role === 'restaurant' ? restaurantDescription : undefined,
+      restaurantAddress: role === 'restaurant' ? restaurantAddress : undefined,
+      restaurantPhone: role === 'restaurant' ? restaurantPhone : undefined,
     });
 
     await user.save();
 
+    // Send verification email
+    const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email/${emailVerificationToken}`;
+    await sendEmail({
+      to: email,
+      subject: 'Verify your FoodieConnect account',
+      html: `<h2>Welcome to FoodieConnect!</h2><p>Click the link below to verify your email address:</p><a href="${verifyUrl}">${verifyUrl}</a>`
+    });
+
     res.status(201).json({ 
-      message: 'User registered successfully. Please check your email to verify your account.' 
+      message: 'User registered successfully.'
     });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ message: 'Server error during registration' });
+  }
+});
+
+// Email verification endpoint
+router.get('/verify-email/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const user = await User.findOne({ emailVerificationToken: token });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired verification token' });
+    }
+    user.isEmailVerified = true;
+    user.emailVerificationToken = undefined;
+    await user.save();
+    res.json({ message: 'Email verified successfully!' });
+  } catch (error) {
+    console.error('Email verification error:', error);
+    res.status(500).json({ message: 'Server error during email verification' });
   }
 });
 
@@ -109,6 +145,13 @@ router.post('/login', async (req, res) => {
         email: user.email,
         fullName: user.fullName,
         isEmailVerified: user.isEmailVerified,
+        role: user.role,
+        restaurantName: user.restaurantName,
+        restaurantDescription: user.restaurantDescription,
+        restaurantAddress: user.restaurantAddress,
+        restaurantPhone: user.restaurantPhone,
+        restaurantImage: user.restaurantImage,
+        restaurantVerified: user.restaurantVerified,
         profilePicture: user.profilePicture
       }
     });
