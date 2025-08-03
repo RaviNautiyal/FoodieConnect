@@ -121,47 +121,57 @@ const Register = () => {
         )}
 
         <form onSubmit={handleSubmit} style={{ marginBottom: '20px' }}>
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-            <input
-              type="text"
-              name="firstName"
-              value={formData.firstName}
-              onChange={handleChange}
-              placeholder="First name"
-              required
-              style={{
-                flex: 1,
-                padding: '12px 16px',
-                border: '2px solid #e0e0e0',
-                borderRadius: '8px',
-                fontSize: '16px',
-                outline: 'none',
-                transition: 'border-color 0.2s',
-                boxSizing: 'border-box',
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#ff7043'}
-              onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
-            />
-            <input
-              type="text"
-              name="lastName"
-              value={formData.lastName}
-              onChange={handleChange}
-              placeholder="Last name"
-              required
-              style={{
-                flex: 1,
-                padding: '12px 16px',
-                border: '2px solid #e0e0e0',
-                borderRadius: '8px',
-                fontSize: '16px',
-                outline: 'none',
-                transition: 'border-color 0.2s',
-                boxSizing: 'border-box',
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#ff7043'}
-              onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
-            />
+          <div style={{ 
+            display: 'flex', 
+            gap: '12px', 
+            marginBottom: '16px',
+            width: '100%',
+            boxSizing: 'border-box'
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <input
+                type="text"
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleChange}
+                placeholder="First name"
+                required
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  border: '2px solid #e0e0e0',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                  boxSizing: 'border-box',
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#ff7043'}
+                onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <input
+                type="text"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleChange}
+                placeholder="Last name"
+                required
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  border: '2px solid #e0e0e0',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                  boxSizing: 'border-box',
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#ff7043'}
+                onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+              />
+            </div>
           </div>
           
           <div style={{ marginBottom: '16px' }}>

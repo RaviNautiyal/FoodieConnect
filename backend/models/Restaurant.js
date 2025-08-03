@@ -21,6 +21,10 @@ const restaurantSchema = new mongoose.Schema({
       longitude: Number
     }
   },
+  menu: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'MenuItem'
+  }],
   cuisine: [{
     type: String,
     enum: ['Italian', 'Chinese', 'Indian', 'Mexican', 'American', 'Japanese', 'Thai', 'Mediterranean', 'French', 'Korean', 'Vietnamese', 'Greek', 'Spanish', 'Lebanese', 'Turkish', 'Other']
@@ -93,6 +97,11 @@ const restaurantSchema = new mongoose.Schema({
     enum: ['$', '$$', '$$$', '$$$$'],
     default: '$$'
   },
+  owner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -111,5 +120,6 @@ restaurantSchema.index({ cuisine: 1 });
 restaurantSchema.index({ rating: -1 });
 restaurantSchema.index({ isOpen: 1 });
 restaurantSchema.index({ 'address.city': 1 });
+restaurantSchema.index({ owner: 1 });
 
 module.exports = mongoose.model('Restaurant', restaurantSchema);

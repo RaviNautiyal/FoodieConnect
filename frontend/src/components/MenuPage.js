@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
-import { Container, Grid, Card, CardMedia, CardContent, Typography, Button, Box, Tabs, Tab, Chip, TextField, InputAdornment, CircularProgress } from '@mui/material';
+import { Container, Grid, Card, CardMedia, CardContent, Typography, Button, Box, Tabs, Tab, Chip, TextField, CircularProgress, Snackbar, Alert } from '@mui/material';
 import { Search as SearchIcon, ShoppingCart as CartIcon, Star as StarIcon } from '@mui/icons-material';
+import api from '../utils/api';
 
 const MenuPage = () => {
   const { id: restaurantId } = useParams();
@@ -10,40 +10,74 @@ const MenuPage = () => {
   // State
   const [restaurant, setRestaurant] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [categories, setCategories] = useState(['All']);
+  const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'error' });
+
+  // Helper function to format address (handles both string and object formats)
+  const formatAddress = (address) => {
+    if (!address) return 'No address available';
+    
+    if (typeof address === 'string') {
+      return address;
+    }
+    
+    // Handle address object
+    const { street, city, state, zipCode } = address;
+    const parts = [street, city, state, zipCode].filter(Boolean);
+    return parts.join(', ');
+  };
 
   // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [restaurantRes, menuRes, categoriesRes] = await Promise.all([
-          axios.get(`/api/restaurants/${restaurantId}`),
-          axios.get(`/api/restaurants/${restaurantId}/menu`),
-          axios.get(`/api/restaurants/${restaurantId}/categories`)
-        ]);
+        setError(null);
         
+        // Fetch restaurant data
+        const restaurantRes = await api.get(`/restaurants/${restaurantId}`);
         setRestaurant(restaurantRes.data);
-        setMenuItems(menuRes.data.menuItems || []);
-        setCategories(categoriesRes.data.categories || []);
+        
+        // Fetch menu items
+        const menuRes = await api.get(`/restaurants/${restaurantId}/menu`);
+        setMenuItems(menuRes.data || []);
+        
+        // Extract unique categories from menu items
+        const uniqueCategories = ['All', ...new Set(menuRes.data.map(item => item.category).filter(Boolean))];
+        setCategories(uniqueCategories);
+        
       } catch (err) {
-        setError('Failed to load menu. Please try again.');
+        console.error('Error fetching menu data:', err);
+        setError('Failed to load menu. Please try again later.');
+        setSnackbar({
+          open: true,
+          message: 'Failed to load menu. Please try again.',
+          severity: 'error'
+        });
       } finally {
         setIsLoading(false);
       }
     };
-    fetchData();
+    
+    if (restaurantId) {
+      fetchData();
+    }
   }, [restaurantId]);
+
+  // Handle snackbar close
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
 
   // Filter items
   const filteredItems = menuItems.filter(item => {
-    const matchesCategory = activeCategory === 'all' || item.category?._id === activeCategory;
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch && item.isAvailable;
+    const matchesCategory = activeCategory === 'All' || item.category === activeCategory;
+    const matchesSearch = item.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch && (item.isAvailable !== false);
   });
 
   if (isLoading) {
@@ -63,11 +97,23 @@ const MenuPage = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Error Snackbar */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={6000} 
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+      
       {/* Header */}
       <Box textAlign="center" mb={4}>
         <Typography variant="h4" gutterBottom>{restaurant?.name}</Typography>
         <Typography color="textSecondary" paragraph>
-          {restaurant?.cuisine} • {restaurant?.address}
+          {restaurant?.cuisine} • {formatAddress(restaurant?.address)}
         </Typography>
         
         {/* Search */}
@@ -92,9 +138,8 @@ const MenuPage = () => {
             variant="scrollable"
             scrollButtons="auto"
           >
-            <Tab label="All" value="all" />
             {categories.map(category => (
-              <Tab key={category._id} label={category.name} value={category._id} />
+              <Tab key={category} label={category} value={category} />
             ))}
           </Tabs>
         </Box>

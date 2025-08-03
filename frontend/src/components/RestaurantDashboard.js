@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 import axios from 'axios';
-
 // Material-UI Components
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
@@ -24,47 +24,115 @@ const RestaurantDashboard = () => {
   const [restaurant, setRestaurant] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
 
+  // Format address helper function
+  const formatAddress = (address) => {
+    if (!address) return 'No address provided';
+    
+    // If address is a string, return it as is
+    if (typeof address === 'string') return address;
+    
+    // If address is an object, format its parts
+    const { street, city, state, zipCode } = address;
+    const parts = [street, city, state, zipCode].filter(Boolean);
+    return parts.join(', ') || 'Address not available';
+  };
+
   // Fetch restaurant data
   const fetchRestaurantData = async () => {
-    if (!user?.id) return;
+    console.log('Fetching restaurant data...');
+    if (!user?.id) {
+      console.log('No user ID, skipping fetch');
+      return;
+    }
     
     try {
       setIsLoading(true);
       setError(null);
       
-      // Fetch restaurant details and menu items
-      const [restaurantRes, menuRes] = await Promise.all([
-        axios.get('/api/restaurants/dashboard', {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        }),
-        axios.get('/api/restaurants/dashboard/menu', {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        })
-      ]);
+      console.log('Making API calls...');
+      console.log('Current user ID:', user.id);
       
-      setRestaurant(restaurantRes.data.restaurant || null);
-      setMenuItems(menuRes.data.menuItems || []);
+      // First, get the list of restaurants for the current user
+      const restaurantsResponse = await api.get('/restaurants/dashboard');
+      console.log('Restaurants response:', restaurantsResponse);
+      
+      // The backend returns an array of restaurants, take the first one
+      const userRestaurants = restaurantsResponse.data || [];
+      console.log('User restaurants:', userRestaurants);
+      
+      const userRestaurant = userRestaurants[0] || null;
+      console.log('Selected restaurant:', userRestaurant);
+      
+      let menuItems = [];
+      
+      // If we have a restaurant, fetch its menu items
+      if (userRestaurant && userRestaurant._id) {
+        try {
+          const menuResponse = await api.get(`/restaurants/${userRestaurant._id}/menu`);
+          menuItems = menuResponse.data || [];
+          console.log('Menu items:', menuItems);
+        } catch (menuErr) {
+          console.error('Error fetching menu items:', menuErr);
+          menuItems = [];
+        }
+      }
+      
+      console.log('Setting state with:', { restaurant: userRestaurant, menuItems });
+      setRestaurant(userRestaurant);
+      setMenuItems(menuItems);
       
     } catch (err) {
-      console.error('Error fetching restaurant data:', err);
+      console.error('Error in fetchRestaurantData:', err);
+      console.error('Error response:', err.response);
       setError(err.response?.data?.message || 'Failed to fetch restaurant data');
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Initial data fetch and event listener setup
   useEffect(() => {
-    fetchRestaurantData();
+    console.log('Setting up RestaurantDashboard...');
+    
+    // Function to refresh data
+    const refreshData = async () => {
+      console.log('Refreshing dashboard data...');
+      await fetchRestaurantData();
+    };
+    
+    // Initial fetch
+    refreshData();
+    
+    // Event listener for restaurant creation
+    const handleRestaurantCreated = () => {
+      console.log('Restaurant created event received');
+      // Add a small delay to ensure the server has processed the new restaurant
+      setTimeout(refreshData, 500);
+    };
+
+    window.addEventListener('restaurantCreated', handleRestaurantCreated);
+    
+    // Cleanup
+    return () => {
+      console.log('Cleaning up RestaurantDashboard...');
+      window.removeEventListener('restaurantCreated', handleRestaurantCreated);
+    };
   }, [user?.id]);
+  
+  // Add a cleanup effect to clear any pending timeouts
+  useEffect(() => {
+    return () => {
+      // This will run when the component unmounts
+      console.log('Cleaning up timeouts...');
+    };
+  }, []);
 
   // Handle menu item deletion
   const handleDeleteMenuItem = async (menuItemId) => {
     if (!window.confirm('Are you sure you want to delete this menu item?')) return;
     
     try {
-      await axios.delete(`/api/menu-items/${menuItemId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      await api.delete(`/menu-items/${menuItemId}`);
       
       // Refresh the data
       fetchRestaurantData();
@@ -77,25 +145,56 @@ const RestaurantDashboard = () => {
   // Render loading state
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" p={4}>
-        <CircularProgress />
-      </Box>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+          <CircularProgress />
+        </Box>
+      </Container>
     );
   }
 
   // Render error state
   if (error) {
     return (
-      <Container maxWidth="lg" style={{ padding: '20px', textAlign: 'center' }}>
-        <Typography color="error" variant="h6">Error: {error}</Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          onClick={() => window.location.reload()}
-          style={{ marginTop: '20px' }}
-        >
-          Retry
-        </Button>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box textAlign="center" my={4}>
+          <Typography color="error" variant="h6" gutterBottom>
+            Error Loading Dashboard
+          </Typography>
+          <Typography color="textSecondary" paragraph>
+            {error}
+          </Typography>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={fetchRestaurantData}
+          >
+            Retry
+          </Button>
+        </Box>
+      </Container>
+    );
+  }
+
+  // Render no restaurant state
+  if (!restaurant) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box textAlign="center" my={4}>
+          <Typography variant="h5" gutterBottom>
+            No Restaurant Found
+          </Typography>
+          <Typography color="textSecondary" paragraph>
+            You haven't created a restaurant yet. Get started by adding your restaurant details.
+          </Typography>
+          <Button 
+            variant="contained" 
+            color="primary"
+            onClick={() => navigate('/restaurant/new')}
+          >
+            Add Your Restaurant
+          </Button>
+        </Box>
       </Container>
     );
   }
@@ -121,7 +220,7 @@ const RestaurantDashboard = () => {
               <Typography variant="h5" gutterBottom>{restaurant.name}</Typography>
               <Typography variant="body1" paragraph>{restaurant.description}</Typography>
               <Typography variant="subtitle1" color="textSecondary">
-                {restaurant.address} • {restaurant.cuisine}
+                {formatAddress(restaurant.address)} • {Array.isArray(restaurant.cuisine) ? restaurant.cuisine.join(', ') : restaurant.cuisine}
               </Typography>
               {restaurant.openingHours && (
                 <Typography variant="body2" color="textSecondary">

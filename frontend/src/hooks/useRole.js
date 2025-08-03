@@ -1,15 +1,27 @@
 import { useAuth } from '../context/AuthContext';
 
 export const useRole = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   
-  const isRestaurant = user?.role === 'restaurant' || user?.userType === 'restaurant';
-  const isCustomer = !isRestaurant && user; // If not a restaurant but authenticated, assume customer
+  // Check if user is authenticated first
+  if (!isAuthenticated || !user) {
+    return {
+      isRestaurant: false,
+      isCustomer: false,
+      userRole: 'guest',
+      hasRole: () => false
+    };
+  }
+
+  // Determine role based on user object structure
+  const userRole = user.role || user.userType;
+  const isRestaurant = userRole === 'restaurant' || userRole === 'RESTAURANT';
+  const isCustomer = userRole === 'customer' || userRole === 'CUSTOMER' || !isRestaurant;
   
   return {
     isRestaurant,
     isCustomer,
-    userRole: user?.role || user?.userType || 'guest',
-    hasRole: (role) => user?.role === role || user?.userType === role
+    userRole: userRole?.toLowerCase() || 'guest',
+    hasRole: (role) => userRole?.toLowerCase() === role?.toLowerCase()
   };
 };

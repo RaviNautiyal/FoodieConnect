@@ -20,9 +20,12 @@ const menuItemSchema = new mongoose.Schema({
     max: [10000, 'Price seems too high']
   },
   category: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Category',
-    required: [true, 'Category is required']
+    type: String,
+    required: [true, 'Category is required'],
+    enum: {
+      values: ['appetizer', 'main', 'dessert', 'beverage'],
+      message: 'Invalid category. Must be one of: appetizer, main, dessert, beverage'
+    }
   },
   restaurant: {
     type: mongoose.Schema.Types.ObjectId,
@@ -43,6 +46,14 @@ const menuItemSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
     index: true
+  },
+  isVegan: {
+    type: Boolean,
+    default: false
+  },
+  isGlutenFree: {
+    type: Boolean,
+    default: false
   },
   isPopular: {
     type: Boolean,
@@ -83,11 +94,12 @@ const menuItemSchema = new mongoose.Schema({
     default: Date.now
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
 // Index for better query performance
-menuItemSchema.index({ restaurantId: 1, category: 1 });
 menuItemSchema.index({ name: 'text', description: 'text' });
 menuItemSchema.index({ isAvailable: 1 });
 

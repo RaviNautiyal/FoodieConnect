@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const Restaurant = require('../models/Restaurant');
 const MenuItem = require('../models/MenuItem');
+const Category = require('../models/Category');
 const { auth } = require('../middleware/auth');
 const { check, validationResult } = require('express-validator');
 
@@ -42,18 +43,42 @@ router.get('/:id', async (req, res) => {
 // Get restaurant menu
 router.get('/:id/menu', async (req, res) => {
   try {
-    const menuItems = await MenuItem.find({ restaurantId: req.params.id });
+    console.log(`Fetching menu for restaurant ID: ${req.params.id}`);
+    
+    // First, verify the restaurant exists
+    const restaurant = await Restaurant.findById(req.params.id);
+    if (!restaurant) {
+      console.log(`Restaurant with ID ${req.params.id} not found`);
+      return res.status(404).json({ message: 'Restaurant not found' });
+    }
+    
+    // Then find menu items for this restaurant
+    const menuItems = await MenuItem.find({ restaurant: req.params.id });
+    console.log(`Found ${menuItems.length} menu items for restaurant ${req.params.id}`);
+    
     res.json(menuItems);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error in /:id/menu route:', {
+      message: error.message,
+      stack: error.stack,
+      params: req.params,
+      query: req.query
+    });
+    res.status(500).json({ 
+      message: 'Server error',
+      ...(process.env.NODE_ENV === 'development' && { error: error.message })
+    });
   }
 });
 
 // Create restaurant
-router.post('/', [auth, 
-  check('name', 'Name is required').not().isEmpty(),
-  check('address', 'Address is required').not().isEmpty(),
-  check('cuisine', 'Cuisine is required').not().isEmpty()
+router.post('/', [
+  auth,
+  [
+    check('name', 'Name is required').not().isEmpty(),
+    check('description', 'Description is required').not().isEmpty(),
+    check('cuisine', 'At least one cuisine type is required').isArray({ min: 1 })
+  ]
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -61,19 +86,51 @@ router.post('/', [auth,
   }
 
   try {
+    const { name, description, cuisine, address, phone, email, openingHours } = req.body;
+    
+    // Create new restaurant
     const restaurant = new Restaurant({
-      name: req.body.name,
-      address: req.body.address,
-      cuisine: req.body.cuisine,
-      description: req.body.description,
+      name,
+      description,
+      cuisine,
+      address,
+      phone,
+      email,
+      openingHours,
       owner: req.user.id
     });
 
     await restaurant.save();
-    res.json(restaurant);
+
+    // Create default categories for the restaurant
+    const defaultCategories = [
+      { name: 'Appetizers', description: 'Delicious starters to begin your meal' },
+      { name: 'Main Course', description: 'Hearty and satisfying main dishes' },
+      { name: 'Desserts', description: 'Sweet treats to end your meal' },
+      { name: 'Beverages', description: 'Refreshing drinks to complement your meal' }
+    ];
+
+    const createdCategories = await Category.insertMany(
+      defaultCategories.map(category => ({
+        ...category,
+        restaurant: restaurant._id,
+        isActive: true
+      }))
+    );
+
+    // Add categories to the restaurant
+    restaurant.categories = createdCategories.map(cat => cat._id);
+    await restaurant.save();
+
+    res.status(201).json(restaurant);
   } catch (error) {
-    console.error(error.message);
-    res.status(500).send('Server Error');
+    console.error('Error creating restaurant:', error);
+    res.status(500).json({ 
+      message: 'Server error',
+      ...(process.env.NODE_ENV === 'development' && { 
+        error: error.message 
+      })
+    });
   }
 });
 

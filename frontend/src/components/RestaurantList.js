@@ -1,14 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MapPin, Star, Clock, ChefHat, Search, Filter, ArrowRight } from 'lucide-react';
 import axios from 'axios';
+
 const RestaurantList = () => {
+  const navigate = useNavigate();
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCuisine, setSelectedCuisine] = useState('all');
- 
-
 
   useEffect(() => {
     // Simulate API call
@@ -18,8 +18,6 @@ const RestaurantList = () => {
         // Replace this with your actual axios call:
         const response = await axios.get('http://localhost:5000/api/restaurants');
         setRestaurants(response.data);
-        
-       
       } catch (error) {
         console.error(error);
       } finally {
@@ -31,20 +29,29 @@ const RestaurantList = () => {
 
   // Filter restaurants based on search and cuisine
   const filteredRestaurants = restaurants.filter(restaurant => {
-    const matchesSearch = restaurant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         restaurant.address.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCuisine = selectedCuisine === 'all' || 
-                          (restaurant.cuisine && restaurant.cuisine.toLowerCase() === selectedCuisine.toLowerCase());
-    return matchesSearch && matchesCuisine;
+    const searchLower = searchTerm.toLowerCase();
+    const nameMatch = restaurant.name?.toLowerCase().includes(searchLower) || false;
+    const addressMatch = typeof restaurant.address === 'string' 
+      ? restaurant.address.toLowerCase().includes(searchLower)
+      : false;
+      
+    const cuisineLower = (restaurant.cuisine || '').toString().toLowerCase();
+    const cuisineMatch = selectedCuisine === 'all' || 
+      cuisineLower === selectedCuisine.toLowerCase();
+      
+    return (nameMatch || addressMatch) && cuisineMatch;
   });
 
   // Get unique cuisines for filter
-  const cuisines = [...new Set(restaurants.map(r => r.cuisine).filter(Boolean))];
+  const cuisines = [...new Set(
+    restaurants
+      .map(r => (r.cuisine || '').toString().trim())
+      .filter(Boolean)
+  )];
 
-  const handleRestaurantClick = (restaurantId) => {
-    // Replace with your actual navigation:
-    // navigate(`/restaurants/${restaurantId}`);
-    alert(`Navigate to restaurant ${restaurantId}`);
+  const handleViewMenu = (e, restaurantId) => {
+    e.stopPropagation(); // Prevent the click from bubbling up to the parent div
+    navigate(`/menu/${restaurantId}`);
   };
 
   if (loading) {
@@ -107,8 +114,10 @@ const RestaurantList = () => {
                   className="pl-10 pr-8 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white min-w-[180px]"
                 >
                   <option value="all">All Cuisines</option>
-                  {cuisines.map(cuisine => (
-                    <option key={cuisine} value={cuisine}>{cuisine}</option>
+                  {cuisines.map((cuisine, index) => (
+                    <option key={`${cuisine}-${index}`} value={cuisine}>
+                      {cuisine}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -128,7 +137,7 @@ const RestaurantList = () => {
           {filteredRestaurants.map((restaurant, index) => (
             <div
               key={restaurant._id}
-              onClick={() => handleRestaurantClick(restaurant._id)}
+              onClick={() => navigate(`/restaurants/${restaurant._id}`)}
               className="group cursor-pointer transform hover:scale-105 transition-all duration-300"
               style={{ 
                 animation: `fadeInUp 0.6s ease-out ${index * 100}ms both`
@@ -170,7 +179,11 @@ const RestaurantList = () => {
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center text-gray-600">
                       <MapPin className="w-4 h-4 mr-2 text-orange-500 flex-shrink-0" />
-                      <span className="text-sm">{restaurant.address}</span>
+                      <span className="text-sm">
+                        {typeof restaurant.address === 'string' 
+                          ? restaurant.address 
+                          : `${restaurant.address?.street || ''}, ${restaurant.address?.city || ''}, ${restaurant.address?.state || ''} ${restaurant.address?.zipCode || ''}`}
+                      </span>
                     </div>
                     
                     <div className="flex items-center text-gray-600">
@@ -181,10 +194,13 @@ const RestaurantList = () => {
 
                   {/* Action Button */}
                   <div className="pt-4 border-t border-gray-100">
-                    <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-3 rounded-xl text-center font-semibold group-hover:from-orange-600 group-hover:to-red-600 transition-all duration-200 shadow-md flex items-center justify-center gap-2">
+                    <button 
+                      onClick={(e) => handleViewMenu(e, restaurant._id)}
+                      className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-3 rounded-xl text-center font-semibold group-hover:from-orange-600 group-hover:to-red-600 transition-all duration-200 shadow-md flex items-center justify-center gap-2"
+                    >
                       View Menu
                       <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
-                    </div>
+                    </button>
                   </div>
                 </div>
               </div>

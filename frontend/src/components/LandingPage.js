@@ -50,58 +50,7 @@ const LandingPage = () => {
       overflow: 'hidden',
     }}>
       
-      {/* Navigation */}
-      <nav style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 1000,
-        padding: '0 60px',
-        height: '80px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        background: scrollY > 50 ? 'rgba(10, 14, 26, 0.95)' : 'transparent',
-        backdropFilter: scrollY > 50 ? 'blur(20px)' : 'none',
-        borderBottom: scrollY > 50 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
-        transition: 'all 0.3s ease',
-      }}>
-        <div style={{
-          fontSize: '24px',
-          fontWeight: 700,
-          color: '#ffffff',
-          letterSpacing: '-0.5px',
-        }}>
-          FoodieConnect
-        </div>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '40px',
-        }}>
-          <span style={{ color: '#8892b0', fontWeight: 500, cursor: 'pointer' }}>About</span>
-          <span style={{ color: '#8892b0', fontWeight: 500, cursor: 'pointer' }}>Contact Us</span>
-          <button style={{
-            padding: '12px 24px',
-            background: 'transparent',
-            border: '1px solid #64ffda',
-            borderRadius: '4px',
-            color: '#64ffda',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.background = 'rgba(100, 255, 218, 0.1)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.background = 'transparent';
-          }}>
-            Get Started
-          </button>
-        </div>
-      </nav>
+      {/* Navigation handled by the global Navigation component */}
 
       {/* Grid Background */}
       <div style={{
@@ -138,23 +87,6 @@ const LandingPage = () => {
           opacity: isLoaded ? 1 : 0,
           transition: 'all 1s ease-out',
         }}>
-          
-         
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            padding: '8px 16px',
-            background: 'rgba(100, 255, 218, 0.1)',
-            border: '1px solid rgba(100, 255, 218, 0.2)',
-            borderRadius: '20px',
-            marginBottom: '32px',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: '#64ffda',
-          }}>
-           
-           
-          </div>
 
           {/* Main Headline */}
           <h1 style={{
