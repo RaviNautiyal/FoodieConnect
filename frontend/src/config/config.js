@@ -4,6 +4,9 @@
 export const config = {
   // Get the backend URL dynamically based on current location
   getBackendUrl: () => {
+     if (process.env.NODE_ENV === 'production') {
+        return 'https://wholesome-youthfulness-production.up.railway.app/'; // Your Railway URL
+      }
     // If running on localhost, use computer's IP address
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       // Try to get the computer's IP from the current network
