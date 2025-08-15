@@ -4,7 +4,7 @@ export const config = {
   // Static backend URL (used directly in AuthContext, CartContext, etc.)
   BACKEND_URL:
     process.env.NODE_ENV === 'production'
-      ? 'https://foodieconnect.onrender.com/api' // Render backend for production
+      ? 'https://foodieconnect.onrender.com/' // Render backend for production
       : (window.location.hostname === 'localhost' ||
          window.location.hostname === '127.0.0.1')
         ? 'http://192.168.1.11:5000/api' // Replace with your local backend IP
