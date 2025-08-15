@@ -12,14 +12,30 @@ const restaurantSchema = new mongoose.Schema({
     required: true
   },
   address: {
-    street: String,
-    city: String,
-    state: String,
-    zipCode: String,
-    coordinates: {
-      latitude: Number,
-      longitude: Number
-    }
+    street: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    zipCode: { type: String, required: true },
+    location: {
+      type: {
+        type: String,
+        enum: ['Point'],
+        default: 'Point',
+        required: true
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+        required: true,
+        validate: {
+          validator: function(v) {
+            return v.length === 2 && v[0] >= -180 && v[0] <= 180 && v[1] >= -90 && v[1] <= 90;
+          },
+          message: props => `${props.value} is not a valid coordinate pair [longitude, latitude]`
+        }
+      }
+    },
+    formattedAddress: String,
+    placeId: String // For Google Places API reference
   },
   menu: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -121,5 +137,8 @@ restaurantSchema.index({ rating: -1 });
 restaurantSchema.index({ isOpen: 1 });
 restaurantSchema.index({ 'address.city': 1 });
 restaurantSchema.index({ owner: 1 });
+
+// 2dsphere index for geospatial queries
+restaurantSchema.index({ 'address.location': '2dsphere' });
 
 module.exports = mongoose.model('Restaurant', restaurantSchema);

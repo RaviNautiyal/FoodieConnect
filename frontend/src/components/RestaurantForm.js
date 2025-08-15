@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -8,30 +8,125 @@ const RestaurantForm = ({ restaurant = null, onSuccess }) => {
   const { id } = useParams();
   const { user } = useAuth();
   const [formData, setFormData] = useState({
-    name: restaurant?.name || '',
+    name: '',
     address: {
-      street: restaurant?.address?.street || '',
-      city: restaurant?.address?.city || '',
-      state: restaurant?.address?.state || '',
-      zipCode: restaurant?.address?.zipCode || ''
+      street: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      location: {
+        type: 'Point',
+        coordinates: ['', ''] // longitude, latitude
+      }
     },
-    cuisine: restaurant?.cuisine ? [...restaurant.cuisine] : [],
-    description: restaurant?.description || ''
+    cuisine: [],
+    description: ''
   });
   const [selectedCuisine, setSelectedCuisine] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(false);
+
+  // Determine if we're in edit mode
+  useEffect(() => {
+    if (id && id !== 'new') {
+      // Check if user is logged in and has restaurant role
+      if (!user || user.role !== 'restaurant') {
+        console.log('User not logged in or not a restaurant owner, redirecting to dashboard');
+        navigate('/dashboard');
+        return;
+      }
+      
+      setIsEditing(true);
+      fetchRestaurantData();
+    }
+  }, [id, user, navigate]);
+
+  const fetchRestaurantData = async () => {
+    try {
+      setInitialLoading(true);
+      setError(null);
+      
+      console.log('Fetching restaurant data for ID:', id);
+      const response = await api.get(`/restaurants/${id}`);
+      const restaurantData = response.data;
+      
+      console.log('Fetched restaurant data:', restaurantData);
+      console.log('Restaurant owner ID:', restaurantData.owner);
+      console.log('Current user ID:', user._id);
+      
+      if (restaurantData) {
+        // Check if the current user owns this restaurant
+        console.log('Authorization check:', {
+          currentUserId: user._id,
+          restaurantOwnerId: restaurantData.owner,
+          userIdType: typeof user._id,
+          ownerIdType: typeof restaurantData.owner,
+          isEqual: restaurantData.owner === user._id
+        });
+        
+        if (restaurantData.owner.toString() !== user._id.toString()) {
+          console.log('User not authorized to edit this restaurant, redirecting to dashboard');
+          navigate('/dashboard');
+          return;
+        }
+        
+        setFormData({
+          name: restaurantData.name || '',
+          address: {
+            street: restaurantData.address?.street || '',
+            city: restaurantData.address?.city || '',
+            state: restaurantData.address?.state || '',
+            zipCode: restaurantData.address?.zipCode || '',
+            location: {
+              type: 'Point',
+              coordinates: [
+                restaurantData.address?.location?.coordinates?.[0] || '', // longitude
+                restaurantData.address?.location?.coordinates?.[1] || ''  // latitude
+              ]
+            }
+          },
+          cuisine: restaurantData.cuisine ? [...restaurantData.cuisine] : [],
+          description: restaurantData.description || ''
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching restaurant data:', err);
+      setError(err.response?.data?.message || 'Failed to fetch restaurant data');
+    } finally {
+      setInitialLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     if (e.target.name.startsWith('address.')) {
       const addressField = e.target.name.split('.')[1];
-      setFormData({
-        ...formData,
-        address: {
-          ...formData.address,
-          [addressField]: e.target.value
-        }
-      });
+      if (addressField === 'longitude' || addressField === 'latitude') {
+        const isLongitude = addressField === 'longitude';
+        const value = e.target.value;
+        setFormData(prev => ({
+          ...prev,
+          address: {
+            ...prev.address,
+            location: {
+              ...prev.address.location,
+              coordinates: [
+                isLongitude ? value : prev.address.location.coordinates[0],
+                !isLongitude ? value : prev.address.location.coordinates[1]
+              ]
+            }
+          }
+        }));
+      } else {
+        setFormData({
+          ...formData,
+          address: {
+            ...formData.address,
+            [addressField]: e.target.value
+          }
+        });
+      }
     } else {
       setFormData({
         ...formData,
@@ -63,8 +158,9 @@ const RestaurantForm = ({ restaurant = null, onSuccess }) => {
     setError(null);
 
     // Validate required fields
-    if (!formData.name || !formData.address.street || formData.cuisine.length === 0) {
-      setError('Please fill in all required fields');
+    const [lng, lat] = formData.address.location.coordinates;
+    if (!formData.name || !formData.address.street || formData.cuisine.length === 0 || !lat || !lng) {
+      setError('Please fill in all required fields, including latitude and longitude');
       setLoading(false);
       return;
     }
@@ -76,19 +172,23 @@ const RestaurantForm = ({ restaurant = null, onSuccess }) => {
           street: formData.address.street,
           city: formData.address.city,
           state: formData.address.state,
-          zipCode: formData.address.zipCode
+          zipCode: formData.address.zipCode,
+          location: {
+            type: 'Point',
+            coordinates: [parseFloat(lng), parseFloat(lat)]
+          }
         },
         cuisine: formData.cuisine,
         description: formData.description,
-        owner: user.id // Ensure the owner ID is set from the logged-in user
+        owner: user._id // Ensure the owner ID is set from the logged-in user
       };
 
       console.log('Submitting restaurant data:', JSON.stringify(restaurantData, null, 2));
 
       let response;
-      if (restaurant) {
+      if (isEditing) {
         // Update existing restaurant
-        console.log('Updating restaurant...');
+        console.log('Updating restaurant with ID:', id);
         response = await api.put(`/restaurants/${id}`, restaurantData);
         console.log('Restaurant update response:', response.data);
       } else {
@@ -140,8 +240,14 @@ const RestaurantForm = ({ restaurant = null, onSuccess }) => {
   return (
     <div className="max-w-2xl mx-auto p-6">
       <h2 className="text-2xl font-bold mb-6">
-        {restaurant ? 'Edit Restaurant' : 'Add New Restaurant'}
+        {isEditing ? 'Edit Restaurant' : 'Add New Restaurant'}
       </h2>
+      
+      {initialLoading && (
+        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
+          Loading restaurant data...
+        </div>
+      )}
       
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -200,6 +306,24 @@ const RestaurantForm = ({ restaurant = null, onSuccess }) => {
                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
               />
             </div>
+            <input
+              type="text"
+              name="address.longitude"
+              value={formData.address.location.coordinates[0]}
+              onChange={handleChange}
+              placeholder="Longitude"
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 mt-2"
+              required
+            />
+            <input
+              type="text"
+              name="address.latitude"
+              value={formData.address.location.coordinates[1]}
+              onChange={handleChange}
+              placeholder="Latitude"
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 mt-2"
+              required
+            />
           </div>
         </div>
         

@@ -1,6 +1,7 @@
 // frontend/src/context/AuthContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { config } from '../config/config';
 
 const AuthContext = createContext();
 
@@ -58,7 +59,7 @@ export const AuthProvider = ({ children }) => {
 
           try {
             const refreshToken = localStorage.getItem('refreshToken');
-            const response = await axios.post('http://localhost:5000/api/auth/refresh', {
+            const response = await axios.post(`${config.BACKEND_URL}/api/auth/refresh`, {
               refreshToken
             });
 
@@ -89,7 +90,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
+      const response = await axios.post(`${config.BACKEND_URL}/api/auth/login`, {
         email,
         password
       });
@@ -109,7 +110,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/register', userData);
+      const response = await axios.post(`${config.BACKEND_URL}/api/auth/register`, userData);
       return response.data;
     } catch (error) {
       throw error;

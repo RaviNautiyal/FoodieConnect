@@ -1,91 +1,181 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useRole } from '../hooks/useRole';
+import { useCart } from '../context/CartContext';
+import ShoppingCart from './ShoppingCart';
+import '../styles/Navigation.css';
 
 const Navigation = () => {
-  const { isAuthenticated, logout } = useAuth();
-  const { isRestaurant, isCustomer } = useRole();
+  const { isAuthenticated, user, logout } = useAuth();
+  const { cart } = useCart();
+  const location = useLocation();
   const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  // Handle scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
+  };
+
+  const cartItemCount = cart.reduce((total, item) => total + (item.quantity || 1), 0);
+
+  const openCart = () => {
+    setIsCartOpen(true);
+  };
+
+  const closeCart = () => {
+    setIsCartOpen(false);
+  };
+
+  const proceedToCheckout = () => {
+    closeCart();
+    navigate('/checkout');
   };
 
   return (
-    <nav className="bg-white shadow-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link to="/" className="text-xl font-bold text-gray-800">
-              FoodieConnect
+    <>
+      <nav className={`navigation ${isScrolled ? 'scrolled' : ''}`}>
+        <div className="nav-container">
+          {/* Logo */}
+          <Link to="/" className="nav-logo">
+            <span className="logo-icon">🍽️</span>
+            <span className="logo-text">FoodieConnect</span>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <div className="nav-menu">
+            <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>
+              Home
             </Link>
-          </div>
-          
-          <div className="hidden md:flex items-center space-x-4">
-            <Link 
-              to="/restaurants" 
-              className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
-            >
+            <Link to="/search" className={`nav-link ${location.pathname === '/search' ? 'active' : ''}`}>
               Restaurants
             </Link>
-            
-            {isAuthenticated ? (
+            {!isAuthenticated && (
               <>
-                {isRestaurant && (
-                  <>
-                    <Link
-                      to="/dashboard"
-                      className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
-                    >
-                      Dashboard
-                    </Link>
-                    <Link
-                      to="/restaurant/new"
-                      className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
-                    >
-                      Add Restaurant
-                    </Link>
-                  </>
-                )}
-                
-                {isCustomer && (
-                  <Link
-                    to="/cart"
-                    className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
-                  >
-                    My Cart
-                  </Link>
-                )}
-                
-                <button
-                  onClick={handleLogout}
-                  className="px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50"
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
-                >
+                <Link to="/login" className="nav-link">
                   Login
                 </Link>
-                <Link
-                  to="/register"
-                  className="px-3 py-2 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                >
+                <Link to="/register" className="nav-link">
                   Sign Up
                 </Link>
               </>
             )}
+            {isAuthenticated && (
+              <Link to="/orders" className={`nav-link ${location.pathname === '/orders' ? 'active' : ''}`}>
+                My Orders
+              </Link>
+            )}
+            {isAuthenticated && user?.role === 'restaurant' && (
+              <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}>
+                Dashboard
+              </Link>
+            )}
+          </div>
+
+          {/* Right Side Actions */}
+          <div className="nav-actions">
+            {/* Cart Icon */}
+            <button onClick={openCart} className="nav-cart">
+              <span className="cart-icon">🛒</span>
+              {cartItemCount > 0 && (
+                <span className="cart-badge">{cartItemCount}</span>
+              )}
+            </button>
+
+            {/* User Menu */}
+            {isAuthenticated ? (
+              <div className="user-menu">
+                <button className="user-button" onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>
+                  <div className="user-avatar">
+                    {user?.profilePicture ? (
+                      <img src={user.profilePicture} alt={user.firstName} />
+                    ) : (
+                      <span>{user?.firstName?.charAt(0) || 'U'}</span>
+                    )}
+                  </div>
+                  <span className="user-name">{user?.firstName || 'User'}</span>
+                  <span className="dropdown-arrow">▼</span>
+                </button>
+                
+                {isUserMenuOpen && (
+                  <div className="dropdown-menu">
+                    <Link to="/profile" className="dropdown-item">
+                      <span className="dropdown-icon">👤</span>
+                      Profile
+                    </Link>
+                    {user?.role === 'restaurant' && (
+                      <Link to="/restaurant/new" className="dropdown-item">
+                        <span className="dropdown-icon">🏪</span>
+                        Add Restaurant
+                      </Link>
+                    )}
+                    <button onClick={handleLogout} className="dropdown-item">
+                      <span className="dropdown-icon">🚪</span>
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            {/* Mobile Menu Button */}
+            <button 
+              className={`mobile-menu-button ${isMobileMenuOpen ? 'open' : ''}`}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+            </button>
           </div>
         </div>
-      </div>
-    </nav>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className="mobile-menu">
+            <Link to="/" className="mobile-nav-link">Home</Link>
+            <Link to="/search" className="mobile-nav-link">Restaurants</Link>
+            {isAuthenticated && (
+              <Link to="/orders" className="mobile-nav-link">My Orders</Link>
+            )}
+            {isAuthenticated && user?.role === 'restaurant' && (
+              <Link to="/dashboard" className="mobile-nav-link">Dashboard</Link>
+            )}
+            {!isAuthenticated && (
+              <>
+                <Link to="/login" className="mobile-nav-link">Login</Link>
+                <Link to="/register" className="mobile-nav-link">Sign Up</Link>
+              </>
+            )}
+          </div>
+        )}
+      </nav>
+
+      {/* Shopping Cart Modal */}
+      <ShoppingCart
+        isOpen={isCartOpen}
+        onClose={closeCart}
+        onProceedToCheckout={proceedToCheckout}
+      />
+    </>
   );
 };
 

@@ -17,7 +17,7 @@ const Cart = () => {
             <div key={item._id}>
               <h4>{item.name}</h4>
               <p>Quantity: {item.quantity}</p>
-              <p>Price: ${item.price * item.quantity}</p>
+              <p>Price: ${Number(item.price * item.quantity).toFixed(2)}</p>
               <button onClick={() => removeFromCart(item._id)}>Remove</button>
             </div>
           ))}

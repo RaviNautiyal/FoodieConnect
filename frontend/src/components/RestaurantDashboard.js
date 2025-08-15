@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
-import axios from 'axios';
+import RestaurantOrders from './RestaurantOrders';
 // Material-UI Components
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
@@ -12,6 +12,8 @@ import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 import AddIcon from '@mui/icons-material/Add';
 
 const RestaurantDashboard = () => {
@@ -21,8 +23,8 @@ const RestaurantDashboard = () => {
   // State management
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [restaurant, setRestaurant] = useState(null);
-  const [menuItems, setMenuItems] = useState([]);
+  const [restaurants, setRestaurants] = useState([]);
+  const [currentTab, setCurrentTab] = useState(0);
 
   // Format address helper function
   const formatAddress = (address) => {
@@ -38,7 +40,7 @@ const RestaurantDashboard = () => {
   };
 
   // Fetch restaurant data
-  const fetchRestaurantData = async () => {
+  const fetchRestaurantData = useCallback(async () => {
     console.log('Fetching restaurant data...');
     if (!user?.id) {
       console.log('No user ID, skipping fetch');
@@ -53,33 +55,24 @@ const RestaurantDashboard = () => {
       console.log('Current user ID:', user.id);
       
       // First, get the list of restaurants for the current user
+      console.log('Calling /restaurants/dashboard endpoint...');
       const restaurantsResponse = await api.get('/restaurants/dashboard');
       console.log('Restaurants response:', restaurantsResponse);
       
       // The backend returns an array of restaurants, take the first one
       const userRestaurants = restaurantsResponse.data || [];
-      console.log('User restaurants:', userRestaurants);
+      console.log('User restaurants array:', userRestaurants);
+      console.log('First restaurant:', userRestaurants[0]);
       
-      const userRestaurant = userRestaurants[0] || null;
-      console.log('Selected restaurant:', userRestaurant);
-      
-      let menuItems = [];
-      
-      // If we have a restaurant, fetch its menu items
-      if (userRestaurant && userRestaurant._id) {
-        try {
-          const menuResponse = await api.get(`/restaurants/${userRestaurant._id}/menu`);
-          menuItems = menuResponse.data || [];
-          console.log('Menu items:', menuItems);
-        } catch (menuErr) {
-          console.error('Error fetching menu items:', menuErr);
-          menuItems = [];
-        }
+      if (userRestaurants.length === 0) {
+        console.log('No restaurants found for user');
+        setError('No restaurants found. Please create a restaurant first.');
+        setRestaurants([]);
+        return;
       }
       
-      console.log('Setting state with:', { restaurant: userRestaurant, menuItems });
-      setRestaurant(userRestaurant);
-      setMenuItems(menuItems);
+      setRestaurants(userRestaurants);
+      console.log('Restaurants state set:', userRestaurants);
       
     } catch (err) {
       console.error('Error in fetchRestaurantData:', err);
@@ -88,77 +81,29 @@ const RestaurantDashboard = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Initial data fetch and event listener setup
-  useEffect(() => {
-    console.log('Setting up RestaurantDashboard...');
-    
-    // Function to refresh data
-    const refreshData = async () => {
-      console.log('Refreshing dashboard data...');
-      await fetchRestaurantData();
-    };
-    
-    // Initial fetch
-    refreshData();
-    
-    // Event listener for restaurant creation
-    const handleRestaurantCreated = () => {
-      console.log('Restaurant created event received');
-      // Add a small delay to ensure the server has processed the new restaurant
-      setTimeout(refreshData, 500);
-    };
-
-    window.addEventListener('restaurantCreated', handleRestaurantCreated);
-    
-    // Cleanup
-    return () => {
-      console.log('Cleaning up RestaurantDashboard...');
-      window.removeEventListener('restaurantCreated', handleRestaurantCreated);
-    };
   }, [user?.id]);
-  
-  // Add a cleanup effect to clear any pending timeouts
-  useEffect(() => {
-    return () => {
-      // This will run when the component unmounts
-      console.log('Cleaning up timeouts...');
-    };
-  }, []);
 
-  // Handle menu item deletion
-  const handleDeleteMenuItem = async (menuItemId) => {
-    if (!window.confirm('Are you sure you want to delete this menu item?')) return;
-    
-    try {
-      await api.delete(`/menu-items/${menuItemId}`);
-      
-      // Refresh the data
-      fetchRestaurantData();
-    } catch (err) {
-      console.error('Error deleting menu item:', err);
-      window.alert(err.response?.data?.message || 'Failed to delete menu item');
-    }
-  };
-  
-  // Render loading state
+  useEffect(() => {
+    fetchRestaurantData();
+  }, [fetchRestaurantData]);
+
+  // Loading state
   if (isLoading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+      <Container maxWidth="lg" style={{ padding: '20px' }}>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
           <CircularProgress />
         </Box>
       </Container>
     );
   }
 
-  // Render error state
+  // Error state
   if (error) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth="lg" style={{ padding: '20px' }}>
         <Box textAlign="center" my={4}>
-          <Typography color="error" variant="h6" gutterBottom>
+          <Typography variant="h6" color="error" gutterBottom>
             Error Loading Dashboard
           </Typography>
           <Typography color="textSecondary" paragraph>
@@ -166,23 +111,23 @@ const RestaurantDashboard = () => {
           </Typography>
           <Button 
             variant="contained" 
-            color="primary" 
+            color="primary"
             onClick={fetchRestaurantData}
           >
-            Retry
+            Try Again
           </Button>
         </Box>
       </Container>
     );
   }
 
-  // Render no restaurant state
-  if (!restaurant) {
+  // No restaurants state
+  if (restaurants.length === 0) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth="lg" style={{ padding: '20px' }}>
         <Box textAlign="center" my={4}>
-          <Typography variant="h5" gutterBottom>
-            No Restaurant Found
+          <Typography variant="h6" gutterBottom>
+            No Restaurants Found
           </Typography>
           <Typography color="textSecondary" paragraph>
             You haven't created a restaurant yet. Get started by adding your restaurant details.
@@ -199,6 +144,10 @@ const RestaurantDashboard = () => {
     );
   }
 
+  const handleTabChange = (event, newValue) => {
+    setCurrentTab(newValue);
+  };
+
   return (
     <Container maxWidth="lg" style={{ padding: '20px' }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
@@ -209,135 +158,175 @@ const RestaurantDashboard = () => {
           startIcon={<AddIcon />}
           onClick={() => navigate('/restaurant/new')}
         >
-          {restaurant ? 'Add Another Restaurant' : 'Create Restaurant'}
+          Add Another Restaurant
         </Button>
       </Box>
+      
+      {/* Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={currentTab} onChange={handleTabChange}>
+          <Tab label="Restaurant Info" />
+          <Tab label="Order Management" />
+          <Tab label="Menu Management" />
+        </Tabs>
+      </Box>
 
-      {restaurant ? (
-        <Box>
-          <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3}>
-            <Box>
-              <Typography variant="h5" gutterBottom>{restaurant.name}</Typography>
-              <Typography variant="body1" paragraph>{restaurant.description}</Typography>
-              <Typography variant="subtitle1" color="textSecondary">
-                {formatAddress(restaurant.address)} • {Array.isArray(restaurant.cuisine) ? restaurant.cuisine.join(', ') : restaurant.cuisine}
-              </Typography>
-              {restaurant.openingHours && (
-                <Typography variant="body2" color="textSecondary">
-                  {restaurant.openingHours}
-                </Typography>
-              )}
-            </Box>
-            <Button 
-              variant="outlined" 
-              color="primary"
-              onClick={() => navigate(`/restaurant/edit/${restaurant._id}`)}
+      {/* Tab Content */}
+      {currentTab === 0 && (
+        <Box sx={{ width: '100%' }}>
+          {restaurants.map((restaurant) => (
+            <Card 
+              key={restaurant._id}
+              sx={{ 
+                width: '100%',
+                height: 200,
+                display: 'flex',
+                flexDirection: 'row',
+                mb: 3,
+                '&:hover': {
+                  boxShadow: 6,
+                  transform: 'translateY(-2px)',
+                  transition: 'all 0.3s ease'
+                }
+              }}
             >
-              Edit Restaurant
-            </Button>
-          </Box>
-          
-          <Box mt={4}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="h6">Menu Items</Typography>
+              <CardContent sx={{ 
+                width: '100%',
+                flex: 1, 
+                display: 'flex', 
+                flexDirection: 'row',
+                alignItems: 'center',
+                p: 3,
+                gap: 3
+              }}>
+                {/* Left side - Restaurant Info */}
+                <Box sx={{ flex: 1 }}>
+                  {/* Restaurant Name */}
+                  <Typography 
+                    variant="h5" 
+                    gutterBottom 
+                    sx={{ 
+                      fontWeight: 'bold',
+                      color: 'primary.main',
+                      mb: 2
+                    }}
+                  >
+                    {restaurant.name}
+                  </Typography>
+
+                  {/* Description */}
+                  <Typography 
+                    variant="body1" 
+                    color="text.secondary"
+                    sx={{ 
+                      mb: 2,
+                      overflow: 'hidden',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      lineHeight: 1.4
+                    }}
+                  >
+                    {restaurant.description || 'No description available'}
+                  </Typography>
+
+                  {/* Address and Details */}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      📍 {formatAddress(restaurant.address)}
+                    </Typography>
+                    
+                    {restaurant.cuisine && (
+                      <Typography variant="body2" color="text.secondary">
+                        🍽️ {Array.isArray(restaurant.cuisine) ? restaurant.cuisine.join(', ') : restaurant.cuisine}
+                      </Typography>
+                    )}
+                    
+                    {restaurant.openingHours && (
+                      <Typography variant="body2" color="text.secondary">
+                        🕒 {restaurant.openingHours}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+
+                {/* Right side - Action Buttons */}
+                <Box sx={{ 
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2,
+                  minWidth: 120
+                }}>
+                  <Button 
+                    variant="outlined" 
+                    color="primary"
+                    size="medium"
+                    onClick={() => navigate(`/restaurant/${restaurant._id}/edit`)}
+                    fullWidth
+                  >
+                    Edit Restaurant
+                  </Button>
+                  <Button 
+                    variant="contained" 
+                    color="primary"
+                    size="medium"
+                    onClick={() => navigate(`/restaurant/${restaurant._id}/menu`)}
+                    fullWidth
+                  >
+                    Manage Menu
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+          ))}
+        </Box>
+      )}
+
+      {currentTab === 1 && (
+        <>
+          {restaurants.length > 0 ? (
+            <>
+              <Typography variant="h6" gutterBottom>
+                Orders for {restaurants[0].name}
+              </Typography>
+              <RestaurantOrders restaurantId={restaurants[0]._id} />
+            </>
+          ) : (
+            <Box textAlign="center" my={4}>
+              <Typography variant="h6" color="text.secondary">
+                No restaurants found. Please create a restaurant first.
+              </Typography>
               <Button 
                 variant="contained" 
-                color="primary"
-                size="small"
-                onClick={() => navigate(`/restaurant/${restaurant._id}/menu/new`)}
+                color="primary" 
+                startIcon={<AddIcon />}
+                onClick={() => navigate('/restaurant/new')}
+                sx={{ mt: 2 }}
               >
-                Add Menu Item
+                Add Restaurant
               </Button>
             </Box>
-            
-            {menuItems.length > 0 ? (
-              <Grid container spacing={3}>
-                {menuItems.map((item) => (
-                  <Grid item xs={12} sm={6} md={4} key={item._id}>
-                    <Card>
-                      <CardContent>
-                        <Box display="flex" justifyContent="space-between">
-                          <Typography variant="h6">{item.name}</Typography>
-                          <Typography color="primary" fontWeight="bold">
-                            ${item.price?.toFixed(2) || '0.00'}
-                          </Typography>
-                        </Box>
-                        
-                        <Typography variant="body2" color="textSecondary" paragraph>
-                          {item.category ? `Category: ${item.category}` : 'Uncategorized'}
-                        </Typography>
-                        
-                        <Typography variant="body2" paragraph>
-                          {item.description || 'No description available'}
-                        </Typography>
-                        
-                        <Box display="flex" justifyContent="space-between" mt={2}>
-                          <Button 
-                            size="small" 
-                            color="primary"
-                            onClick={() => navigate(`/menu-item/edit/${item._id}`)}
-                          >
-                            Edit
-                          </Button>
-                          <Button 
-                            size="small" 
-                            color="error"
-                            onClick={() => handleDeleteMenuItem(item._id)}
-                          >
-                            Delete
-                          </Button>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
-            ) : (
-              <Box 
-                textAlign="center" 
-                p={4} 
-                border={1} 
-                borderColor="divider" 
-                borderRadius={1}
-              >
-                <Typography variant="body1" color="textSecondary" paragraph>
-                  No menu items found. Add your first menu item to get started.
-                </Typography>
-                <Button 
-                  variant="contained" 
-                  color="primary"
-                  onClick={() => navigate(`/restaurant/${restaurant._id}/menu/new`)}
-                  startIcon={<AddIcon />}
-                >
-                  Add Menu Item
-                </Button>
-              </Box>
-            )}
-          </Box>
-        </Box>
-      ) : (
-        <Box 
-          textAlign="center" 
-          p={6} 
-          border={1} 
-          borderColor="divider" 
-          borderRadius={1}
-          mt={4}
-        >
-          <Typography variant="h6" gutterBottom>No Restaurant Found</Typography>
-          <Typography variant="body1" color="textSecondary" paragraph>
-            You don't have any restaurants yet. Create your first restaurant to get started.
+          )}
+        </>
+      )}
+
+      {currentTab === 2 && (
+        <Box textAlign="center" my={4}>
+          <Typography variant="h6" gutterBottom>
+            Menu Management
           </Typography>
-          <Button 
-            variant="contained" 
-            color="primary"
-            onClick={() => navigate('/restaurant/new')}
-            startIcon={<AddIcon />}
-            size="large"
-            sx={{ mt: 2 }}
-          >
-            Create Restaurant
-          </Button>
+          <Typography color="textSecondary" paragraph>
+            Manage your menu items here.
+          </Typography>
+          {restaurants.length > 0 && (
+            <Button 
+              variant="contained" 
+              color="primary"
+              onClick={() => navigate(`/restaurant/${restaurants[0]._id}/menu`)}
+            >
+              Go to Menu Management
+            </Button>
+          )}
         </Box>
       )}
     </Container>

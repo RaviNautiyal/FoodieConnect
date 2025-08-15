@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useParams } from 'react-router-dom';
 import { Container, Grid, Card, CardMedia, CardContent, Typography, Button, Box, Tabs, Tab, Chip, TextField, CircularProgress, Snackbar, Alert } from '@mui/material';
 import { Search as SearchIcon, ShoppingCart as CartIcon, Star as StarIcon } from '@mui/icons-material';
+import { CartContext } from '../context/CartContext';
 import api from '../utils/api';
 
 const MenuPage = () => {
   const { id: restaurantId } = useParams();
+  const { addToCart } = useContext(CartContext);
   
   // State
   const [restaurant, setRestaurant] = useState(null);
@@ -177,7 +179,7 @@ const MenuPage = () => {
                   fullWidth 
                   variant="contained" 
                   startIcon={<CartIcon />}
-                  onClick={() => {}}
+                  onClick={() => addToCart({ ...item, restaurantId })}
                 >
                   Add to Cart
                 </Button>
