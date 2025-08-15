@@ -5,7 +5,7 @@ export const config = {
   // Get the backend URL dynamically based on current location
   getBackendUrl: () => {
      if (process.env.NODE_ENV === 'production') {
-        return 'https://foodieconnect.onrender.com'; // Your Railway URL
+        return 'https://foodieconnect.onrender.com/api'; // Your Railway URL
       }
     // If running on localhost, use computer's IP address
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -17,7 +17,7 @@ export const config = {
     // If already on a network IP, use the same network for backend
     const currentHost = window.location.hostname;
     const currentPort = window.location.port;
-    const backendPort = '5000';
+    const backendPort = '10000';
     
     // Extract IP from current hostname (e.g., 192.168.1.11 from 192.168.1.11:3000)
     if (currentHost.match(/^\d+\.\d+\.\d+\.\d+$/)) {
