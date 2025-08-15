@@ -14,45 +14,50 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
   console.log('Created uploads directory:', uploadsDir);
 }
+app.use(cors({
+  origin: "*",
+  credentials: true
+}));
 
-// CORS configuration for mobile access - more permissive
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or Postman)
-    if (!origin) return callback(null, true);
+
+// // CORS configuration for mobile access - more permissive
+// const corsOptions = {
+//   origin: function (origin, callback) {
+//     // Allow requests with no origin (like mobile apps or Postman)
+//     if (!origin) return callback(null, true);
     
-    // Allow all local network origins for development
-    const isLocalNetwork = origin.includes('localhost') || 
-                          origin.includes('127.0.0.1') ||
-                          origin.includes('192.168.') ||
-                          origin.includes('10.') ||
-                          origin.includes('172.16.') ||
-                          origin.includes('172.17.') ||
-                          origin.includes('172.18.') ||
-                          origin.includes('172.19.') ||
-                          origin.includes('172.20.') ||
-                          origin.includes('172.21.') ||
-                          origin.includes('172.22.') ||
-                          origin.includes('172.23.') ||
-                          origin.includes('172.24.') ||
-                          origin.includes('172.25.') ||
-                          origin.includes('172.26.') ||
-                          origin.includes('172.27.') ||
-                          origin.includes('172.28.') ||
-                          origin.includes('172.29.') ||
-                          origin.includes('172.30.') ||
-                          origin.includes('172.31.');
+//     // Allow all local network origins for development
+//     const isLocalNetwork = origin.includes('localhost') || 
+//                           origin.includes('127.0.0.1') ||
+//                           origin.includes('192.168.') ||
+//                           origin.includes('10.') ||
+//                           origin.includes('172.16.') ||
+//                           origin.includes('172.17.') ||
+//                           origin.includes('172.18.') ||
+//                           origin.includes('172.19.') ||
+//                           origin.includes('172.20.') ||
+//                           origin.includes('172.21.') ||
+//                           origin.includes('172.22.') ||
+//                           origin.includes('172.23.') ||
+//                           origin.includes('172.24.') ||
+//                           origin.includes('172.25.') ||
+//                           origin.includes('172.26.') ||
+//                           origin.includes('172.27.') ||
+//                           origin.includes('172.28.') ||
+//                           origin.includes('172.29.') ||
+//                           origin.includes('172.30.') ||
+//                           origin.includes('172.31.');
     
-    if (isLocalNetwork) {
-      callback(null, true);
-    } else {
-      console.log('CORS blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  optionsSuccessStatus: 200
-};
+//     if (isLocalNetwork) {
+//       callback(null, true);
+//     } else {
+//       console.log('CORS blocked origin:', origin);
+//       callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+//   credentials: true,
+//   optionsSuccessStatus: 200
+// };
 
 app.use(cors(corsOptions));
 app.use(express.json());
