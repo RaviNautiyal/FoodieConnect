@@ -55,7 +55,7 @@ const RestaurantSearch = () => {
       setIsLoading(true);
       setError(null);
       
-      const response = await axios.get(`${API_URL}/search/geolocation`, {
+      const response = await axios.get(`${API_URL}/api/search/geolocation`, {
         params: {
           latitude: coords.lat,
           longitude: coords.lng,
@@ -244,7 +244,7 @@ const RestaurantSearch = () => {
     }
 
     try {
-      const response = await axios.get(`${API_URL}/search/location-suggestions`, {
+      const response = await axios.get(`${API_URL}/api/search/location-suggestions`, {
         params: { query }
       });
 
@@ -264,7 +264,7 @@ const RestaurantSearch = () => {
     
     // Try to geocode the selected location
     try {
-      const response = await axios.get(`${API_URL}/search/geocode`, {
+      const response = await axios.get(`${API_URL}/api/search/geocode`, {
         params: { address: selectedLocation.displayName }
       });
 
@@ -294,7 +294,7 @@ const RestaurantSearch = () => {
     setShowLocationInput(false);
 
     try {
-      const response = await axios.get(`${API_URL}/search/geocode`, {
+      const response = await axios.get(`${API_URL}/api/search/geocode`, {
         params: { address: manualLocation }
       });
 
@@ -329,7 +329,7 @@ const RestaurantSearch = () => {
     }
     
     try {
-      const response = await axios.get(`${API_URL}/search/autocomplete?query=${encodeURIComponent(query)}`);
+      const response = await axios.get(`${API_URL}/api/search/autocomplete?query=${encodeURIComponent(query)}`);
       setLocationSuggestions(response.data.data?.restaurants || []);
     } catch (error) {
       console.error('Error fetching location suggestions:', error);
@@ -381,7 +381,7 @@ const RestaurantSearch = () => {
         params.append('page', pagination.page);
         params.append('limit', pagination.limit);
         
-        response = await axios.get(`${API_URL}/restaurants/nearby?${params.toString()}`);
+        response = await axios.get(`${API_URL}/api/restaurants/nearby?${params.toString()}`);
         const nearby = Array.isArray(response.data) ? response.data : [];
         setRestaurants(nearby);
         setPagination(prev => ({ ...prev, total: nearby.length || 0, pages: 1 }));
@@ -404,7 +404,7 @@ const RestaurantSearch = () => {
           fallback.append('page', pagination.page);
           fallback.append('limit', pagination.limit);
           
-          const fallbackResponse = await axios.get(`${API_URL}/search/restaurants?${fallback.toString()}`);
+          const fallbackResponse = await axios.get(`${API_URL}/api/search/restaurants?${fallback.toString()}`);
           if (fallbackResponse.data.success) {
             setRestaurants(fallbackResponse.data.data);
             setPagination(prev => ({ 
@@ -441,7 +441,7 @@ const RestaurantSearch = () => {
         params.append('page', pagination.page);
         params.append('limit', pagination.limit);
         
-        response = await axios.get(`${API_URL}/search/restaurants?${params.toString()}`);
+        response = await axios.get(`${API_URL}/api/search/restaurants?${params.toString()}`);
         if (response.data.success) {
           setRestaurants(response.data.data);
           setPagination(prev => ({ 
@@ -471,7 +471,7 @@ const RestaurantSearch = () => {
     if (!isAuthenticated) return;
     
     try {
-      const response = await axios.get(`${API_URL}/search/recommendations`, {
+      const response = await axios.get(`${API_URL}/api/search/recommendations`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
