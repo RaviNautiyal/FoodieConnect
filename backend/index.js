@@ -19,6 +19,7 @@ if (!fs.existsSync(uploadsDir)) {
 const allowedOrigins = [
   'http://localhost:3000', // local frontend dev
   'https://foodieconnect.onrender.com',
+  'https://foodie-connect-rfat1k751-ravi-nautiyals-projects.vercel.app',
   // production domain (your backend)
   // Add your frontend prod domain here, e.g., 'https://foodieconnect.netlify.app'
   
