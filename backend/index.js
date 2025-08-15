@@ -6,7 +6,7 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 10000;
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads/restaurants');
