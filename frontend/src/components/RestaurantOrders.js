@@ -57,7 +57,7 @@ const RestaurantOrders = ({ restaurantId }) => {
         params.append('status', statusFilter);
       }
       
-      const url = `${API_URL}/orders/restaurant/${restaurantId}?${params}`;
+      const url = `${API_URL}/api/orders/restaurant/${restaurantId}?${params}`;
       console.log('RestaurantOrders: Making request to:', url);
       
       const response = await axios.get(url, {
@@ -116,10 +116,10 @@ const RestaurantOrders = ({ restaurantId }) => {
       setError(''); // Clear any previous errors
       
       console.log('Updating order status:', { orderId, newStatus, reason });
-      console.log('API URL:', `${API_URL}/orders/${orderId}/status`);
+      console.log('API URL:', `${API_URL}/api/orders/${orderId}/status`);
       console.log('Token:', localStorage.getItem('accessToken') ? 'Present' : 'Missing');
       
-      const response = await axios.patch(`${API_URL}/orders/${orderId}/status`, 
+      const response = await axios.patch(`${API_URL}/api/orders/${orderId}/status`, 
         { status: newStatus, reason },
         {
           headers: {
