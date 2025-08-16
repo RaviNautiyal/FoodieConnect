@@ -34,7 +34,7 @@ const OrderHistory = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/orders/my-orders?page=${page}&limit=10`, {
+      const response = await axios.get(`${API_URL}/api/orders/my-orders?page=${page}&limit=10`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
@@ -55,7 +55,7 @@ const OrderHistory = () => {
   const fetchOrderDetails = async (id) => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/orders/${id}`, {
+      const response = await axios.get(`${API_URL}/api/orders/${id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
@@ -74,7 +74,7 @@ const OrderHistory = () => {
 
   const cancelOrder = async (orderId, reason) => {
     try {
-      const response = await axios.patch(`${API_URL}/orders/${orderId}/cancel`, 
+      const response = await axios.patch(`${API_URL}/api/orders/${orderId}/cancel`, 
         { reason },
         {
           headers: {
