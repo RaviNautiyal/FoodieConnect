@@ -20,7 +20,7 @@ if (!fs.existsSync(uploadsDir)) {
 // Allow all origins
 app.use(cors({
   origin: "*",   // any domain can access
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // allowed methods
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"], // allowed methods
   allowedHeaders: ["Content-Type", "Authorization"],   // allowed headers
 }));
 
