@@ -43,8 +43,8 @@ const RestaurantDetails = () => {
         setLoading(true);
         setError('');
         const [resResponse, menuResponse] = await Promise.all([
-          axios.get(`http://localhost:5000/api/restaurants/${id}`),
-          axios.get(`http://localhost:5000/api/restaurants/${id}/menu`)
+          axios.get(`https://foodieconnect.onrender.com//api/restaurants/${id}`),
+          axios.get(`https://foodieconnect.onrender.com//api/restaurants/${id}/menu`)
         ]);
         setRestaurant(resResponse.data);
         setMenuItems(menuResponse.data);
