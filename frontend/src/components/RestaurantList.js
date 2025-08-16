@@ -16,7 +16,7 @@ const RestaurantList = () => {
       try {
         setLoading(true);
         // Replace this with your actual axios call:
-        const response = await axios.get('http://localhost:5000/api/restaurants');
+        const response = await axios.get('https://foodieconnect.onrender.com/api/restaurants');
         setRestaurants(response.data);
       } catch (error) {
         console.error(error);
