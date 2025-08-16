@@ -15,28 +15,15 @@ if (!fs.existsSync(uploadsDir)) {
   console.log('Created uploads directory:', uploadsDir);
 }
 
-// ===== CORS configuration =====
-const allowedOrigins = [
-  'http://localhost:3000', // local frontend dev
-  'https://foodieconnect.onrender.com',
-  'https://foodie-connect-rfat1k751-ravi-nautiyals-projects.vercel.app',
-  // production domain (your backend)
-  // Add your frontend prod domain here, e.g., 'https://foodieconnect.netlify.app'
-  
-  'https://foodie-connect.vercel.app'
-];
 
+
+// Allow all origins
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log('CORS blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
+  origin: "*",   // any domain can access
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // allowed methods
+  allowedHeaders: ["Content-Type", "Authorization"],   // allowed headers
 }));
+
 
 // ===== Middleware =====
 app.use(express.json());
